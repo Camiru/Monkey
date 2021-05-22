@@ -1,0 +1,60 @@
+Monkey是一個命令行工具，可以運行在模擬器里或實際設備中。 它向系統發送偽隨機的用戶事件流，實現對正在開發的應用程序進行壓力測試。 Monkey包括許多選項，它們大致分為四大類：
+· 基本配置選項，如設置嘗試的事件數量。
+· 運行約束選項，如設置只對單獨的一個包進行測試。
+· 事件類型和頻率。
+· 調試選項。
+在Monkey運行的時候，它生成事件，並把它們發給系統。 同時，Monkey還對測試中的系統進行監測，對下列三種情況進行特殊處理：
+· 如果限定了Monkey運行在一個或幾個特定的包上，那麼它會監測試圖轉到其它包的操作，並對其進行阻止。
+· 如果應用程序崩潰或接收到任何失控異常，Monkey將停止並報錯。
+· 如果應用程序產生了應用程序不響應(application not responding)的錯誤，Monkey將會停止並報錯。
+按照選定的不同級別的反饋信息，在Monkey中還可以看到其執行過程報告和生成的事件。
+Monkey基本用法
+可以通過開發機器上的命令行或腳本來啟動Monkey。 由於Monkey運行在模擬器/設備環境中，所以必須用其環境中的shell來進行啟動。 可以通過在每條命令前加上adb shell來達到目的，也可以進入Shell後直接輸入Monkey命令。 基本語法如下：
+$ adb shell monkey [options]
+如果不指定options，Monkey將以無反饋模式啟動，並把事件任意發送到安裝在目標環境中的全部包。 下面是一個更為典型的命令行示例，它啟動指定的應用程序，並向其發送500個偽隨機事件：
+$ adb shell monkey -p your.package.name -v 500
+--v
+命令行的每一個-v 將增加反饋信息的級別。 Level 0( 缺省值) 除啟動提示、測試完成和最終結果之外，提供較少信息。 Level 1 提供較為詳細的測試信息，如逐個發送到Activity 的事件。 Level 2 提供更加詳細的設置信息，如測試中被選中的或未被選中的Activity 。
+事件
+-s <seed>
+偽隨機數生成器的seed 值。 如果用相同的seed 值再次運行Monkey ，它將生成相同的事件序列。
+--throttle <milliseconds>
+在事件之間插入固定延遲。 通過這個選項可以減緩Monkey 的執行速度。 如果不指定該選項， Monkey 將不會被延遲，事件將盡可能快地被產成。
+--pct-touch <percent>
+調整觸摸事件的百分比( 觸摸事件是一個down-up 事件，它發生在屏幕上的某單一位置) 。
+--pct-motion <percent>
+調整動作事件的百分比( 動作事件由屏幕上某處的一個down 事件、一系列的偽隨機事件和一個up 事件組成) 。
+--pct-trackball <percent>
+調整軌跡事件的百分比( 軌跡事件由一個或幾個隨機的移動組成，有時還伴隨有點擊) 。
+--pct-nav <percent>
+調整“基本”導航事件的百分比( 導航事件由來自方向輸入設備的up/down/left/right 組成) 。
+--pct-majornav <percent>
+調整“主要”導航事件的百分比( 這些導航事件通常引發圖形界面中的動作，如： 5-way 鍵盤的中間按鍵、回退按鍵、菜單按鍵 )
+--pct-syskeys <percent>
+調整“系統”按鍵事件的百分比( 這些按鍵通常被保留，由系統使用，如Home 、 Back 、 Start Call 、 End Call 及音量控制鍵) 。
+--pct-appswitch <percent>
+調整啟動Activity 的百分比。 在隨機間隔裡， Monkey 將執行一個startActivity () 調用，作為最大程度覆蓋包中全部Activity 的一種方法。
+--pct-anyevent <percent>
+調整其它類型事件的百分比。 它包羅了所有其它類型的事件，如：按鍵、其它不常用的設備按鈕、等等。
+約束限制
+-p <allowed-package-name>
+如果用此參數指定了一個或幾個包， Monkey 將只允許系統啟動這些包裡的Activity 。 如果你的應用程序還需要訪問其它包裡的Activity( 如選擇取一個聯繫人) ，那些包也需要在此同時指定。 如果不指定任何包， Monkey 將允許系統啟動全部包裡的Activity 。 要指定多個包，需要使用多個-p 選項，每個-p 選項只能用於一個包。
+-c <main-category>
+如果用此參數指定了一個或幾個類別， Monkey 將只允許系統啟動被這些類別中的某個類別列出的Activity 。 如果不指定任何類別， Monkey 將選擇下列類別中列出的Activity ： Intent.CATEGORY_LAUNCHER 或Intent.CATEGORY_MONKEY 。 要指定多個類別，需要使用多個-c 選項，每個-c 選項只能用於一個類別。
+調試
+--dbg-no-events
+設置此選項， Monkey 將執行初始啟動，進入到一個測試Activity ，然後不會再進一步生成事件。為了得到最佳結果，把它與-v 、一個或幾個包約束、以及一個保持Monkey 運行30 秒或更長時間的非零值聯合起來，從而提供一個環境，​​可以監視應用程序所調用的包之間的轉換。
+--hprof
+設置此選項，將在Monkey 事件序列之前和之後立即生成profiling 報告。 這將會在data/misc 中生成大文件(~5Mb) ，所以要小心使用它。
+--ignore-crashes
+通常，當應用程序崩潰或發生任何失控異常時， Monkey 將停止運行。 如果設置此選項， Monkey 將繼續向系統發送事件，直到計數完成。
+--ignore-timeouts
+通常，當應用程序發生任何超時錯誤( 如“ Application Not Responding ”對話框) 時， Monkey 將停止運行。 如果設置此選項， Monkey 將繼續向系統發送事件，直到計數完成。
+--ignore-security-exceptions
+通常，當應用程序發生許可錯誤( 如啟動一個需要某些許可的Activity) 時， Monkey 將停止運行。 如果設置了此選項， Monkey 將繼續向系統發送事件，直到計數完成。
+--kill-process-after-error
+通常，當Monkey 由於一個錯誤而停止時，出錯的應用程序將繼續處於運行狀態。 當設置了此選項時，將會通知系統停止發生錯誤的進程。 注意，正常的( 成​​功的) 結束，並沒有停止啟動的進程，設備只是在結束事件之後，簡單地保持在最後的狀態。
+--monitor-native-crashes
+監視並報告 Android 系統中本地代碼的崩潰事件。 如果設置了--kill-process-after-error ，系統將停止運行。
+--wait-dbg
+停止執行中的Monkey ，直到有調試器和它相連接。
